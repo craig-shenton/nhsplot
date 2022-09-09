@@ -24,8 +24,8 @@ format:
       caption: none
     code-fold: true
     code-summary: "Show code"
-    self-contained: true
-    self-contained-math: true
+    embed-resources: true
+    standalone: true
     # URL options
     link-external-icon: true
     link-external-newwindow: true
@@ -43,6 +43,7 @@ source("R/nhs_style.R")
 library(tidyverse)
 library(dplyr)
 library(gapminder)
+library(lemon) # for axis options
 ```
 
 ```{r load library}
@@ -53,6 +54,7 @@ source("../R/nhs_style.R")
 library(tidyverse)
 library(dplyr)
 library(gapminder)
+library(lemon)
 ```
 
 ## Bar Charts
@@ -74,7 +76,7 @@ bar_df <- gapminder %>%
 ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp)) +
   geom_bar(stat="identity", 
            position="identity", 
-           fill="#1380A1") +
+           fill="#005EB8") +
   # theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
@@ -102,8 +104,8 @@ maxLife <- bar_df[which.max(bar_df$lifeExp), ]
 ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp)) +
   geom_bar(stat="identity", 
            position="identity", 
-           fill="#1380A1") +
-  geom_bar(stat="identity", position="identity", fill=ifelse(bar_df$country == maxLife$country, "#1380A1", "#dddddd")) +
+           fill="#005EB8") +
+  geom_bar(stat="identity", position="identity", fill=ifelse(bar_df$country == maxLife$country, "#005EB8", "#dddddd")) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
   labs(subtitle = paste(
@@ -133,13 +135,35 @@ bar_df <- gapminder %>%
 ggplot(bar_df, aes(x = reorder(country, lifeExp), y = lifeExp)) +
   geom_bar(stat="identity", 
            position="identity", 
-           fill="#1380A1") +
+           fill="#005EB8") +
   # theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
   coord_flip() +
   theme(panel.grid.major.x = element_line(color="#cbcbcb"), 
         panel.grid.major.y=element_blank()) 
+```
+
+### Pyramid Chart
+
+```{r fig-pyramid-chart}
+#| label: fig-pyramid-chart
+#| fig-cap: Age / sex distribution.
+#| warning: false
+
+set.seed(100)
+a <- seq(from = 0, to = 90, by = 10)
+d <- data.frame(age = paste(a, a + 10, sep = "-"),
+                sex = rep(x = c("Female", "Male"), each = 10),
+                pop = sample(x = 1:100, size = 20))
+
+ggplot(data = d, 
+       mapping = aes(x = ifelse(test = sex == "Male", yes = -pop, no = pop), 
+                     y = age, fill = sex)) +
+  geom_col() +
+  scale_x_symmetric(labels = abs) +
+  labs(x = "Population") +
+  nhs_style()
 ```
 
 ## Line Charts
@@ -155,7 +179,7 @@ line_df <- gapminder %>%
 
 #Make plot
 ggplot(line_df, aes(x = year, y = lifeExp)) +
-  geom_line(colour = "#1380A1", size = 1) +
+  geom_line(colour = "#005EB8", size = 1) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
   ylim(c(0, max(line_df$lifeExp)+10)) + # add space above line
@@ -181,7 +205,7 @@ latestDate_value <- line_df %>%
 
 #Make plot
 ggplot(line_df, aes(x = year, y = lifeExp)) +
-  geom_line(colour = "#1380A1", size = 1) +
+  geom_line(colour = "#005EB8", size = 1) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
   ylim(c(0, max(line_df$lifeExp)+10)) + # add space above line
@@ -205,7 +229,7 @@ ggplot(line_df, aes(x = year, y = lifeExp)) +
 #| fig-cap: Life expectancy in Malawi 1952-2007. Data source [@gapminder]
 #| warning: false
 
-#Prepare data
+# prepare data
 line_df <- gapminder %>%
   filter(country == "Malawi")
 
@@ -214,9 +238,9 @@ latestDate <- max(line_df$year)
 latestDate_value <- line_df %>% 
       filter(year == latestDate)
 
-#Make plot
+# make plot
 ggplot(line_df, aes(x = year, y = lifeExp)) +
-  geom_line(colour = "#1380A1", size = 1) +
+  geom_line(colour = "#005EB8", size = 1) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   geom_hline(yintercept=45,  # taget line options
       linetype='dashed',
@@ -242,7 +266,43 @@ ggplot(line_df, aes(x = year, y = lifeExp)) +
 
 1. Function to add target as variable with adjustments
 
-## References
+## Scatter Plots
+
+```{r fig-scatterplot}
+#| label: fig-scatterplot
+#| fig-cap: Population vs land area in mid-western USA.
+#| warning: false
+
+# prepare data
+data("midwest", package = "ggplot2")
+options(scipen=999)  # turn-off scientific notation like 1e+48
+
+# make plot
+ggplot(midwest, aes(x=area, y=poptotal)) + 
+  geom_point(aes(col=state, size=popdensity)) + 
+  xlim(c(0, 0.1)) + 
+  ylim(c(0, 500000)) + 
+  labs(y="Population", x="Area") +
+  nhs_style()
+```
+
+## Box Plot
+
+```{r fig-box-plot}
+#| label: fig-box-plot
+#| fig-cap: City Mileage grouped by class of vehicle, USA.
+#| warning: false
+
+# Plot
+g <- ggplot(mpg, aes(class, cty))
+g + geom_boxplot(varwidth=T, fill="#005EB8") + 
+    labs(
+         x="Class of Vehicle",
+         y="City Mileage") +
+    nhs_style()
+```
+
+# References
 
 ::: {#refs}
 :::

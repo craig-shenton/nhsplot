@@ -19,7 +19,7 @@ nhs_style <- function() {
                             face = "bold",
                             color = "#222222"),
   # chart sub-title options
-  plot.subtitle = ggplot2::element_text(family=font,
+  plot.subtitle = ggplot2::element_text(family = font,
                                size = 16,
                                margin = ggplot2::margin(9, 0, 9, 0)),
   plot.caption = ggplot2::element_blank(),
@@ -31,7 +31,7 @@ nhs_style <- function() {
   legend.background = ggplot2::element_blank(),
   legend.title = ggplot2::element_blank(),
   legend.key = ggplot2::element_blank(),
-  legend.text = ggplot2::element_text(family=font,
+  legend.text = ggplot2::element_text(family = font,
                              size = 16,
                              color = "#222222"),
 
