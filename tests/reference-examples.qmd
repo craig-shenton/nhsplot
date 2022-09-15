@@ -81,7 +81,10 @@ ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp)) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
   labs(title="Bar Chart Title",
-       subtitle = "Bar Chart Sub-Title")
+       subtitle = "Bar Chart Sub-Title",
+       x = "Country",
+       y = "Life Expectancy (Years)"
+       )
 ```
 
 ### Bar chart with highligted value

@@ -36,10 +36,12 @@ nhs_style <- function() {
                              color = "#222222"),
 
   # axis options
-  axis.title = ggplot2::element_blank(),
-  axis.text = ggplot2::element_text(family = font,
+  axis.title = ggplot2::element_text(family = font,
                            size = 14,
                            color = "#222222"),
+  axis.text = ggplot2::element_text(family = font,
+                           size = 12,
+                           color = "#425563"),
   axis.text.x = ggplot2::element_text(margin = ggplot2::margin(5, b = 10)),
   axis.ticks = ggplot2::element_blank(),
   axis.line = ggplot2::element_blank(),
