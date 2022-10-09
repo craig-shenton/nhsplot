@@ -117,7 +117,9 @@ ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp)) +
             "is",
             format(round(maxLife$lifeExp, 0), nsmall = 0),
             "Years"
-            )
+            ), 
+            x = "Country",
+            y = "Life Expectancy (Years)"
        )
 ```
 
@@ -144,7 +146,10 @@ ggplot(bar_df, aes(x = reorder(country, lifeExp), y = lifeExp)) +
   nhs_style() +
   coord_flip() +
   theme(panel.grid.major.x = element_line(color="#cbcbcb"), 
-        panel.grid.major.y=element_blank()) 
+        panel.grid.major.y=element_blank()) +
+  labs(x = "Country",
+    y = "Life Expectancy (Years)"
+    )
 ```
 
 ### Pyramid Chart
@@ -158,15 +163,17 @@ set.seed(100)
 a <- seq(from = 0, to = 90, by = 10)
 d <- data.frame(age = paste(a, a + 10, sep = "-"),
                 sex = rep(x = c("Female", "Male"), each = 10),
-                pop = sample(x = 1:100, size = 20))
+                pop = sample(x = 1:100, size = 20)+100)
 
 ggplot(data = d, 
        mapping = aes(x = ifelse(test = sex == "Male", yes = -pop, no = pop), 
                      y = age, fill = sex)) +
   geom_col() +
   scale_x_symmetric(labels = abs) +
-  labs(x = "Population") +
-  nhs_style()
+  labs(x = "Population Count",
+       y = "Age Group (Years)") +
+  nhs_style() +
+  scale_fill_discrete(breaks=c("Male","Female")) # sort legend lable order
 ```
 
 ## Line Charts
@@ -268,6 +275,56 @@ ggplot(line_df, aes(x = year, y = lifeExp)) +
 **todo:** 
 
 1. Function to add target as variable with adjustments
+
+## Deviation Plot
+Example graph for displaying deviations from a common reference point or baseline.
+
+```{r load deviation}
+#| label: fig-deviation
+#| fig-cap: Deviation
+#| warning: false
+
+#make data
+df <- data.frame(trt=rep(c("Dose 1", "Dose 2", "Dose 3"), each=4),
+                 visit=rep(c(1, 2, 3, 4),3),
+                 response=c(0, 0.7, 0.8, 0.6, 
+                            0, 0.5, 0.6, 0.2,
+                            0, -0.2, -0.6, -0.9 ))
+
+ggplot(df, aes(x=visit, y=response, group=trt, colour=trt)) + 
+  geom_hline(yintercept = 0, size = 1, colour="#333333") + 
+  geom_point(size=3) +
+  geom_line(size=1) +
+  scale_y_continuous(limits = c(-1, 1), breaks = c(-1,-0.5,0,0.5,1)) +
+  nhs_style() +
+  labs(y = "Response",
+       x = "Visits"
+       )
+```
+
+## Correlation Plot
+For displaying the relationship between them two or more variables.
+
+```{r load correlation}
+#| label: fig-correlation
+#| fig-cap: Correlation
+#| warning: false
+
+set.seed(1984)
+# Create some data
+df <- data.frame(cause=c(runif(40,1,10))   )
+df$effect <- df$cause*(rnorm(40,2,0.5)) + rnorm(40,0,1)
+
+ggplot(df, aes(x=cause, y=effect)) + 
+  geom_point(size=4.5, shape = 16,position="jitter") +
+  geom_smooth(method = "lm") +        
+  scale_y_continuous(expand=c(0,0.5)) +
+  scale_x_continuous(expand=c(0,0.5)) +
+  nhs_style() +
+  labs(y = "Effect",
+       x = "Cause"
+       )
+```
 
 ## Scatter Plots
 
