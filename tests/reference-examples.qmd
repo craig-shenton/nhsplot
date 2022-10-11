@@ -40,6 +40,7 @@ format:
 ```r
 #load packages
 source("R/nhs_style.R")
+library(ggrepel)
 library(tidyverse)
 library(dplyr)
 library(gapminder)
@@ -51,6 +52,7 @@ library(lemon) # for axis options
 
 #load packages
 source("../R/nhs_style.R")
+library(ggrepel)
 library(tidyverse)
 library(dplyr)
 library(gapminder)
@@ -73,10 +75,9 @@ bar_df <- gapminder %>%
   head(5)
 
 #Make plot
-ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp)) +
-  geom_bar(stat="identity", 
-           position="identity", 
-           fill="#005EB8") +
+ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp, label = round(lifeExp, digits = 0))) +
+  geom_col(fill= nhs_palette("nhs_blues")) +
+  geom_text(nudge_y = 3, size = 5) +
   # theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
@@ -185,16 +186,40 @@ ggplot(data = d,
 
 #Prepare data
 line_df <- gapminder %>%
-  filter(country == "Malawi") 
+  filter(country %in% c("Algeria","Libya", "Mauritius", "Reunion", "Tunisia"))
+
+latest_values <- line_df %>%
+  top_n(1, year) 
 
 #Make plot
-ggplot(line_df, aes(x = year, y = lifeExp)) +
-  geom_line(colour = "#005EB8", size = 1) +
+ggplot(line_df, aes(x = year, y = lifeExp, xend = 2010, yend = 100, colour = country)) +
+  geom_line(size = 1) +
+  scale_color_manual(values=nhs_palette("nhs_blues")) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
-  ylim(c(0, max(line_df$lifeExp)+10)) + # add space above line
+  theme(legend.position="none", 
+        plot.margin = margin(0,2,0,0, "cm")) +
   labs(title="Line Chart Title",
-       subtitle = "Line Chart Sub-Title")
+       subtitle = "Line Chart Sub-Title",
+       x = "Year",
+       y = "Life Expectancy (Years)"
+      ) +
+  coord_cartesian(clip = "off") +
+  geom_label_repel(
+    aes(label = paste(
+            country,
+            ": ",
+            round(lifeExp, digits = 0),
+            sep = ""
+            )),
+    data = latest_values, 
+    size = 4,
+    nudge_x = 0, direction = "y", hjust = "left",
+    xlim = c(-Inf, Inf),
+    ylim = c(-Inf, Inf),
+    fill = "white",
+    min.segment.length = Inf
+    )
 ```
 
 ### Line chart with latest value KPI

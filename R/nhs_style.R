@@ -57,3 +57,31 @@ nhs_style <- function() {
   strip.text = ggplot2::element_text(size  = 18,  hjust = 0)
   )
   }
+
+nhs_palettes <- list(
+  nhs_blues = c("#005EB8", "#003087", "#0072CE", "#41B6E6", "#00A9CE"),
+  nhs_regions = c("#FAD510", "#CB2314", "#273046", "#354823", "#1E1E1E")
+)
+
+# source: https://github.com/karthik/wesanderson
+nhs_palette <- function(name, n, type = c("discrete", "continuous")) {
+  type <- match.arg(type)
+
+  pal <- nhs_palettes[[name]]
+  if (is.null(pal))
+    stop("Palette not found.")
+
+  if (missing(n)) {
+    n <- length(pal)
+  }
+
+  if (type == "discrete" && n > length(pal)) {
+    stop("Number of requested colors greater than what palette can offer")
+  }
+
+  out <- switch(type,
+    continuous = grDevices::colorRampPalette(pal)(n),
+    discrete = pal[1:n]
+  )
+  structure(out, class = "palette", name = name)
+}
