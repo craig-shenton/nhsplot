@@ -45,6 +45,7 @@ library(tidyverse)
 library(dplyr)
 library(gapminder)
 library(lemon) # for axis options
+library(formattable)
 ```
 
 ```{r load library}
@@ -57,6 +58,12 @@ library(tidyverse)
 library(dplyr)
 library(gapminder)
 library(lemon)
+library(formattable)
+
+# custom colours
+customGreen0 = "#DeF7E9"
+customGreen = "#71CA97"
+customRed = "#ff7f7f"
 ```
 
 ## Bar Charts
@@ -77,7 +84,7 @@ bar_df <- gapminder %>%
 #Make plot
 ggplot(bar_df, aes(x = reorder(country, desc(lifeExp)), y = lifeExp, label = round(lifeExp, digits = 0))) +
   geom_col(fill= nhs_palette("nhs_blues")) +
-  geom_text(nudge_y = 3, size = 5) +
+  geom_label(nudge_y = -5, size = 5) +
   # theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1)) +
   geom_hline(yintercept = 0, size = 1, colour="#333333") +
   nhs_style() +
@@ -386,6 +393,40 @@ g + geom_boxplot(varwidth=T, fill="#005EB8") +
          y="City Mileage") +
     nhs_style()
 ```
+
+## Tables
+
+```{r fig-table}
+#| label: tbl-table
+#| tbl-cap: Life expectancy in Africa 1952-2007.
+
+# data
+line_df <- gapminder %>%
+  filter(country %in% c("Algeria","Libya", "Mauritius", "Reunion", "Tunisia"))
+
+latest_values <- line_df %>%
+  top_n(1, year) %>%  
+  mutate_if(is.numeric, round, digits = 0) %>%
+  arrange(desc(lifeExp))
+
+colnames(latest_values) <- c("Country", "Continent", "Year", "Life Expectancy", "Poulation", "GDP Per Capita")
+
+improvement_formatter <- formatter("span", 
+    style = x ~ style(font.weight = "bold", 
+    color = ifelse(x > 8000, customGreen, ifelse(x < 8000, customRed, "black"))), 
+    x ~ icontext(ifelse(x>8000, "thumbs-up", "arrow-down"), x)
+    )
+
+# Table
+formattable(latest_values,
+            align =c("l","c","c","r","r","r"), 
+            list(`Country` = formatter(
+              "span", style = ~ style(color = "grey",font.weight = "bold")), 
+            `Life Expectancy` = color_tile(customGreen0, customGreen),
+            `GDP Per Capita` = improvement_formatter
+            ))
+```
+Data source [@gapminder]
 
 # References
 
