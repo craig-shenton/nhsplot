@@ -46,6 +46,7 @@ library(dplyr)
 library(gapminder)
 library(lemon) # for axis options
 library(formattable)
+library(sf) # spatial data
 ```
 
 ```{r load library}
@@ -59,6 +60,7 @@ library(dplyr)
 library(gapminder)
 library(lemon)
 library(formattable)
+library(sf)
 
 # custom colours
 customGreen0 = "#DeF7E9"
@@ -67,6 +69,35 @@ customRed = "#ff7f7f"
 ```
 
 ## Bar Charts
+
+```{r}
+c_clinicos <- structure(list(Region = c("Cianosis Aguda", "Cianosis Aguda", 
+"Gassping", "Gassping", "FR mayor de 40 o menor de 6 rpm", "FR mayor de 40 o menor de 6 rpm", 
+"Oliguria que no responde a volumen y uso de diuréticos", "Oliguria que no responde a volumen y uso de diuréticos", 
+"Transtornos de la coagulación", "Transtornos de la coagulación", 
+"Pérdida de la conciencia mayor de 12 horas", "Pérdida de la conciencia mayor de 12 horas", 
+"Pérdida de la conciencia y ausencia de pulso y latidos cardíacos.", 
+"Pérdida de la conciencia y ausencia de pulso y latidos cardíacos.", 
+"Stroke", "Stroke", "Parálisis total o convulsiones incontrolables", 
+"Parálisis total o convulsiones incontrolables", "Ictericia más preeclampsia", 
+"Ictericia más preeclampsia"), Route = c("Presente", "Ausente", 
+"Presente", "Ausente", "Presente", "Ausente", "Presente", "Ausente", 
+"Presente", "Ausente", "Presente", "Ausente", "Presente", "Ausente", 
+"Presente", "Ausente", "Presente", "Ausente", "Presente", "Ausente"
+), Value = c(13, 797, 0, 810, 520, 290, 314, 496, 150, 659, 
+1, 809, 1, 809, 9, 801, 49, 761, 114, 696)), row.names = c(NA, 
+-20L), class = c("tbl_df", "tbl", "data.frame"))
+
+library(dplyr)
+library(ggplot2)
+
+d <- c_clinicos %>%
+  group_by(Region) %>%
+  mutate(label = sprintf('%d \n(%.2f %%)', Value, prop.table(Value) * 100), 
+         label = replace(label, Value == 0, ''),
+         percent = prop.table(Value) * 100)
+
+```
 
 Reference (see @fig-barchart).
 
@@ -186,49 +217,6 @@ ggplot(data = d,
 
 ## Line Charts
 
-```{r fig-linechart}
-#| label: fig-linechart
-#| fig-cap: Life expectancy in Malawi 1952-2007. Data source [@gapminder]
-#| warning: false
-
-#Prepare data
-line_df <- gapminder %>%
-  filter(country %in% c("Algeria","Libya", "Mauritius", "Reunion", "Tunisia"))
-
-latest_values <- line_df %>%
-  top_n(1, year) 
-
-#Make plot
-ggplot(line_df, aes(x = year, y = lifeExp, xend = 2010, yend = 100, colour = country)) +
-  geom_line(size = 1) +
-  scale_color_manual(values=nhs_palette("nhs_blues")) +
-  geom_hline(yintercept = 0, size = 1, colour="#333333") +
-  nhs_style() +
-  theme(legend.position="none", 
-        plot.margin = margin(0,2,0,0, "cm")) +
-  labs(title="Line Chart Title",
-       subtitle = "Line Chart Sub-Title",
-       x = "Year",
-       y = "Life Expectancy (Years)"
-      ) +
-  coord_cartesian(clip = "off") +
-  geom_label_repel(
-    aes(label = paste(
-            country,
-            ": ",
-            round(lifeExp, digits = 0),
-            sep = ""
-            )),
-    data = latest_values, 
-    size = 4,
-    nudge_x = 0, direction = "y", hjust = "left",
-    xlim = c(-Inf, Inf),
-    ylim = c(-Inf, Inf),
-    fill = "white",
-    min.segment.length = Inf
-    )
-```
-
 ### Line chart with latest value KPI
 
 ```{r fig-linechart-kpi}
@@ -259,6 +247,20 @@ ggplot(line_df, aes(x = year, y = lifeExp)) +
        )
   )
 ```
+
+```{r}
+test <- (paste("Life expectancy in Malawi is",
+      format(round(latestDate_value$lifeExp, 0), nsmall = 0),
+      "as of",
+      format(latestDate, format="%Y")
+      ))
+
+latest_date <- paste(format(latestDate, format="%Y"))
+```
+
+`r test`
+
+This is my `r latest_date` located somewhere in my Markdown document.
 
 **todo:** 
 
@@ -307,6 +309,256 @@ ggplot(line_df, aes(x = year, y = lifeExp)) +
 **todo:** 
 
 1. Function to add target as variable with adjustments
+
+### Line chart with error bars
+
+```{r fig-linechart-error}
+#| label: fig-linechart-error
+#| fig-cap: Life expectancy in Malawi 1952-2007. Data source [@gapminder]
+#| warning: false
+
+# prepare data
+line_df <- gapminder %>%
+  filter(country == "Malawi")
+
+# random errors
+error <- abs(rnorm(nrow(line_df))+3)
+
+# add error bars
+line_df$lowerci = line_df$lifeExp - error
+line_df$upperci = line_df$lifeExp + error
+
+# get latest metric value for KPI
+latestDate <- max(line_df$year)
+latestDate_value <- line_df %>% 
+      filter(year == latestDate)
+
+# make plot
+ggplot(line_df, aes(x = year, y = lifeExp)) +
+  geom_line(colour = "#005EB8", size = 1) +
+  geom_hline(yintercept = 0, size = 1, colour="#333333") +
+  geom_hline(yintercept=45,  # taget line options
+      linetype='dashed',
+      size = 1.5,
+      colour='#425563') +
+  geom_label(                # taget lable options
+      aes(
+            x = 1952,
+            y = 45, label = "Target (45 Years)"
+      ),
+      hjust = 0.15, 
+      vjust = -.3, 
+      colour = "#425563", 
+      fill = "white", 
+      label.size = NA, 
+      family="Helvetica", 
+      size = 6) +
+  nhs_style() +
+  ylim(c(0, max(line_df$lifeExp)+10)) + # add space above line +
+  geom_errorbar(data = line_df, aes(x = year, 
+                             ymin = lowerci,
+                             ymax = upperci),
+                             width = 1.2,
+                             size = 0.3,
+                             alpha = 0.5)
+```
+
+## Multi-Line Chart with data lables
+
+```{r fig-linechart}
+#| label: fig-linechart
+#| fig-cap: Life expectancy in Malawi 1952-2007. Data source [@gapminder]
+#| warning: false
+
+#Prepare data
+line_df <- gapminder %>%
+  filter(country %in% c("Algeria","Libya", "Mauritius", "Reunion", "Tunisia"))
+
+latest_values <- line_df %>%
+  top_n(1, year) 
+
+#Make plot
+ggplot(line_df, aes(x = year, y = lifeExp, xend = 2010, yend = 100, colour = country)) +
+  geom_line(size = 1) +
+  scale_color_manual(values=nhs_palette("nhs_blues")) +
+  geom_hline(yintercept = 0, size = 1, colour="#333333") +
+  nhs_style() +
+  theme(legend.position="none", 
+        plot.margin = margin(0,2,0,0, "cm")) +
+  labs(title="Line Chart Title",
+       subtitle = "Line Chart Sub-Title",
+       x = "Year",
+       y = "Life Expectancy (Years)"
+      ) +
+  coord_cartesian(clip = "off") +
+  geom_label_repel(
+    aes(label = paste(
+            country,
+            ": ",
+            round(lifeExp, digits = 0),
+            sep = ""
+            )),
+    data = latest_values, 
+    size = 4,
+    nudge_x = 0, direction = "y", hjust = "left",
+    xlim = c(-Inf, Inf),
+    ylim = c(-Inf, Inf),
+    fill = "white",
+    min.segment.length = Inf
+    )
+```
+
+## Multi-Line Chart with Region Colours
+
+```{r fig-linechart-colours}
+#| label: fig-linechart-colours
+#| fig-cap: Life expectancy in Malawi 1952-2007. Data source [@gapminder]
+#| warning: false
+
+#Prepare data
+line_df <- gapminder %>%
+  filter(country %in% c("Afghanistan","Albania","Algeria","Angola","Argentina","Australia","Austria","Bahrain","Bangladesh","Belgium","Benin"))
+
+#Make plot
+ggplot(line_df, aes(x = year, y = lifeExp, colour = country)) +
+  geom_line(size = 1) +
+  scale_color_manual(values=nhs_palette("midlands_region")) +
+  geom_hline(yintercept = 0, size = 1, colour="#333333") +
+  nhs_style() +
+  theme(legend.position = "top", plot.margin = margin(0,0,0,0, "cm")) +
+  labs(title="Line Chart Title",
+       subtitle = "Line Chart Sub-Title",
+       x = "Year",
+       y = "Life Expectancy (Years)"
+      )
+```
+
+## Small Multiples
+
+```{r fig-linechart-small-multiples, fig.width=10, fig.height=10}
+#| label: fig-linechart-small-multiples
+#| fig-cap: Life expectancy 1952-2007. Data source [@gapminder]
+#| warning: false
+
+#Prepare data
+line_df <- gapminder %>%
+  filter(country %in% c("Afghanistan","Albania","Algeria","Angola","Argentina","Australia","Austria","Bahrain","Bangladesh","Belgium","Benin"))
+
+ggplot(line_df, aes(x = year, y = lifeExp)) +
+  geom_line(aes(color = "red"),
+            size = 1.5)+
+  facet_wrap(~ country, ncol = 3, strip.position = "top")+
+  labs(title = "Life expectancy 1952-2007",
+       x = "Year",
+       y = "Life Expectancy (Years)",
+       caption = "Source: Public Health England National flu and COVID-19 surveillance report (week 8, provisional).") +
+  scale_y_continuous(limits = c(0,100)) +
+  theme(panel.background = element_blank(),
+        strip.text = element_text(face = "bold", color = "black"),
+        strip.background = element_rect(color = "black", fill = "white"),
+        legend.position = "none")
+  #scale_x_continuous(breaks=c(1952,2007))+
+  #theme(axis.ticks = element_blank(), legend.position = "none") +
+  #nhs_style_sm()
+```
+
+## Small Table
+
+```{r}
+#| label: tbl-small-table
+#| tbl-cap: Life expectancy 1952-2007.
+#| layout-nrow: 2
+
+#Prepare data
+line_df <- gapminder %>%
+  filter(country %in% c("Afghanistan","Albania","Algeria","Angola","Argentina","Australia","Austria","Bahrain","Bangladesh","Belgium","Benin"))
+
+# data
+latest_values <- line_df %>%
+  top_n(1, year) %>%  
+  mutate_if(is.numeric, round, digits = 0) %>%
+  arrange(desc(lifeExp))
+
+colnames(latest_values) <- c("Country", "Continent", "Year", "Life Expectancy", "Poulation", "GDP Per Capita")
+
+improvement_formatter <- formatter("span", 
+    style = x ~ style(font.weight = "bold", 
+    color = ifelse(x > 8000, customGreen, ifelse(x < 8000, customRed, "black"))), 
+    x ~ icontext(ifelse(x>8000, "arrow-up", "arrow-down"), x)
+    )
+
+benchmark <- formatter("colorbar", style = x ~ style(display = "block", 
+        padding = "0 4px",
+        `border-radius` = "4px",
+        #width = "40px",
+        `background-color` = ifelse(x > 70,
+                   customGreen, ifelse(x < 70, customRed, "black")),
+                   NA)
+                   )
+
+# Table
+tbl_small_table <- formattable(latest_values, align =c("l","c","c","r","r","r"), 
+            list(`Country` = formatter(
+              "span", style = ~ style(display = "block", 
+        padding = "0 4px", `border-radius` = "4px", color = "white", `background-color` = nhs_palette("midlands_region"),font.weight = "bold")), 
+            `Life Expectancy` = benchmark,
+            `GDP Per Capita` = improvement_formatter
+            ))#, table.attr = 'style="font-size: 20px;";\"')
+
+export_formattable(tbl_small_table,"FT.png")
+```
+
+## Sparklines
+
+```{r, fig.width=10, fig.height=10}
+#| include: False
+
+library(reactablefmtr)
+
+#Prepare data
+line_df <- gapminder %>%
+  filter(country %in% c("Afghanistan","Albania","Algeria","Angola","Argentina","Australia","Austria","Bahrain","Bangladesh","Belgium","Benin"))
+
+# data
+latest_values <- line_df %>%
+  top_n(1, year) %>%  
+  mutate_if(is.numeric, round, digits = 0) %>%
+  mutate(gdpPercap = scales::dollar(gdpPercap)) %>%
+  arrange(desc(lifeExp))
+
+list_df <- line_df %>%
+  group_by(country, continent) %>%
+  summarize(lifeExp_list = list(lifeExp))
+
+sparkline_df <- inner_join(list_df, latest_values, by = "country")
+
+sparkline_df <- select(sparkline_df,-c(pop, continent.y, year, lifeExp)) 
+
+colnames(sparkline_df) <- c("Country", "Continent", "Life Expectancy (1950-2007)", "GDP Per Capita")
+
+sparkline_df <- select(sparkline_df, "Country", "Continent", "GDP Per Capita", "Life Expectancy (1950-2007)")
+```
+
+```{r}
+reactable(
+  sparkline_df,
+  defaultPageSize = 11,
+  columns = list(
+    Country = colDef(maxWidth = 120),
+    Continent = colDef(maxWidth = 120),
+    `GDP Per Capita` = colDef(maxWidth = 170),
+    `Life Expectancy (1950-2007)` = colDef(
+      cell = react_sparkline(sparkline_df,
+        height = 40,
+        highlight_points = highlight_points(all='blue'),
+        show_area = TRUE,
+        line_width = 2,
+        labels = c("first", "last"),
+        label_size = "1.0em"))
+    )
+  )
+
+```
 
 ## Deviation Plot
 Example graph for displaying deviations from a common reference point or baseline.
@@ -414,7 +666,7 @@ colnames(latest_values) <- c("Country", "Continent", "Year", "Life Expectancy", 
 improvement_formatter <- formatter("span", 
     style = x ~ style(font.weight = "bold", 
     color = ifelse(x > 8000, customGreen, ifelse(x < 8000, customRed, "black"))), 
-    x ~ icontext(ifelse(x>8000, "thumbs-up", "arrow-down"), x)
+    x ~ icontext(ifelse(x>8000, "arrow-up", "arrow-down"), x)
     )
 
 # Table
@@ -427,6 +679,93 @@ formattable(latest_values,
             ))
 ```
 Data source [@gapminder]
+
+# Maps
+
+```{r load map data}
+#| include: False
+
+#load library
+library(sf)
+
+# load UK map
+
+ukMap <- st_read('https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Countries_December_2021_UK_BUC/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson')
+
+# Load a map - taken from https://geoportal.statistics.gov.uk/search?collection=Dataset&sort=name&tags=all(BDY_ICB%2CJUL_2022)
+mapData <- st_read('https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Integrated_Care_Boards_July_2022_EN_BGC_v2/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson')
+
+# create a random value to colour the systems in...
+mapData$colourvalue <- sample (100, size= nrow(mapData), replace = TRUE)
+
+icb_data <- read.csv("../data/icb_codes_july22.csv", header=TRUE, stringsAsFactors=FALSE)
+
+mapData <- left_join(mapData, icb_data, by = c("ICB22CD" = "ICB22CD"))
+
+hexData <- st_read('../data/pcn_hex.geojson')
+```
+
+```{r fig-map, fig.width=10, fig.height=12}
+#| label: fig-map
+#| fig-cap: ICB Map.
+
+Metric <- mapData$colourvalue
+
+ggplot() +
+    geom_sf(data = ukMap, fill= "antiquewhite") +
+    geom_sf(data = mapData, fill= mapData$hex_colour) +
+    theme(panel.grid.major = element_line(
+      color = gray(.3),
+    linetype = "dashed",
+    size = 0.3),
+    panel.background = element_rect(
+      fill = "aliceblue")) +
+    coord_sf(xlim = c(-6, 2), ylim = c(50,56)) #+
+    #geom_text_repel(data = mapData ,aes(x = LONG,
+                    #y = LAT,
+                    #nudge_x = 5,
+                    #nudge_y = 53,
+                    #label = ICB22NM.x)
+                    #)
+```
+
+
+```{r fig-region-map}
+#| label: fig-region-map
+#| fig-cap: London ICB Map.
+
+londonMap <- mapData %>%
+  filter(NHSEREGCD %in% c("Y56"))
+
+ggplot() +
+    geom_sf(data = londonMap, fill = "#00A499", colour = "#FFFFFF", lwd = 1.5) +
+    theme(panel.background = element_rect(fill = "white"),
+          axis.title=element_blank(),
+          axis.text=element_blank(),
+          axis.ticks=element_blank(),
+          plot.title = element_text(colour = "#005EB8", size = 60),
+          plot.subtitle = element_text(colour = "#005EB8", size = 25)) +
+    labs(title = londonMap$NHSEREGNM,
+         subtitle = "England")
+```
+
+## Hex Map
+Ref: [https://open-innovations.org/blog/2022-07-19-nhs-pcns-as-a-hex-cartogram](https://open-innovations.org/blog/2022-07-19-nhs-pcns-as-a-hex-cartogram)
+
+```{r hex-map}
+#| label: fig-hex-map
+#| fig-cap: London ICB Hex Map.
+
+hexData <- hexData %>%
+  filter(Region.Code %in% c("Y56"))
+
+ggplot() +
+    geom_sf(data = hexData, fill= hexData$colour) +
+    theme(panel.background = element_rect(fill = "white"),
+          axis.title=element_blank(),
+          axis.text=element_blank(),
+          axis.ticks=element_blank())
+```
 
 # References
 
