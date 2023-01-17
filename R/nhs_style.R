@@ -7,6 +7,8 @@
 #' geom_line(colour = "#007f7f", size = 1) +
 #' geom_hline(yintercept = 0, size = 1, colour="#333333") +
 #' nhs_style()
+#'
+#' test
 
 nhs_style <- function() {
   font <- "Helvetica"
@@ -154,8 +156,8 @@ nhs_palette <- function(name, n, type = c("discrete", "continuous")) {
 #'
 #' @export
 library("htmltools")
-library("webshot") 
-export_formattable <- function(f, file, width = "100%", height = NULL, 
+library("webshot")
+export_formattable <- function(f, file, width = "100%", height = NULL,
                                background = "white", delay = 0.2)
 {
   w <- as.htmlwidget(f, width = width, height = height)
